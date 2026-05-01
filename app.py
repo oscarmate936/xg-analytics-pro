@@ -38,58 +38,66 @@ def xg_desde_cuotas(cuota_local, cuota_empate, cuota_visitante):
 st.set_page_config(page_title="xG Analytics Pro", page_icon="⚽", layout="centered")
 
 st.title("⚽ xG Analytics Pro")
-st.markdown("Convierte las cuotas 1X2 de las casas de apuestas en **Goles Esperados (xG)** utilizando la distribución de Poisson para encontrar valor en tus análisis.")
+st.markdown("""
+Esta herramienta utiliza un modelo basado en la **distribución de Poisson** para realizar una ingeniería inversa de las cuotas de las casas de apuestas y determinar los **Goles Esperados (xG)** implícitos.
+""")
 
 st.divider()
 
-# Inputs en columnas
+# Configuración de entrada de datos
+st.subheader("Configuración del Encuentro")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    cuota_local = st.number_input("Cuota Local (1)", min_value=1.01, value=2.00, step=0.05)
+    cuota_local = st.number_input("Cuota Local (1)", min_value=1.01, value=2.10, step=0.01, help="Cuota ofrecida para la victoria local.")
 with col2:
-    cuota_empate = st.number_input("Cuota Empate (X)", min_value=1.01, value=3.20, step=0.05)
+    cuota_empate = st.number_input("Cuota Empate (X)", min_value=1.01, value=3.40, step=0.01, help="Cuota ofrecida para el empate.")
 with col3:
-    cuota_visitante = st.number_input("Cuota Visitante (2)", min_value=1.01, value=3.50, step=0.05)
+    cuota_visitante = st.number_input("Cuota Visitante (2)", min_value=1.01, value=3.60, step=0.01, help="Cuota ofrecida para la victoria visitante.")
 
-if st.button("📊 Calcular xG", use_container_width=True, type="primary"):
-    with st.spinner("Calculando modelo de Poisson..."):
-        xg_l, xg_v = xg_desde_cuotas(cuota_local, cuota_empate, cuota_visitante)
-        
-        st.success("¡Cálculo completado!")
-        
-        # Mostrar resultados en grande
-        res_col1, res_col2 = st.columns(2)
-        res_col1.metric("xG Equipo Local", f"{xg_l}")
-        res_col2.metric("xG Equipo Visitante", f"{xg_v}")
-        
-        st.divider()
-        st.subheader("🔗 Compartir Resultados")
-        
-        # Texto formateado para compartir
-        texto_compartir = f"⚽ Análisis de Cuotas a xG:\nLocal ({cuota_local}) ➡️ {xg_l} xG\nEmpate ({cuota_empate})\nVisitante ({cuota_visitante}) ➡️ {xg_v} xG\n\nCalculado con xG Analytics Pro."
-        
-        # Generar URLs para los botones
-        texto_codificado = urllib.parse.quote(texto_compartir)
-        url_whatsapp = f"https://api.whatsapp.com/send?text={texto_codificado}"
-        url_twitter = f"https://twitter.com/intent/tweet?text={texto_codificado}"
-        
-        # Botones de compartir usando HTML/Markdown
-        st.markdown(
-            f"""
-            <a href="{url_whatsapp}" target="_blank">
-                <button style="background-color:#25D366; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">
-                    Compartir en WhatsApp
-                </button>
-            </a>
-            <a href="{url_twitter}" target="_blank">
-                <button style="background-color:#1DA1F2; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; margin-left:10px;">
-                    Compartir en X (Twitter)
-                </button>
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
-        
-        # Opción para copiar manualmente
-        st.text_area("Copiar texto manualmente:", value=texto_compartir, height=120)
+# Botón principal de ejecución
+if st.button("📊 Calcular xG Implícito", use_container_width=True, type="primary"):
+    with st.spinner("Optimizando modelo de Poisson..."):
+        try:
+            xg_l, xg_v = xg_desde_cuotas(cuota_local, cuota_empate, cuota_visitante)
+            
+            st.success("Análisis realizado correctamente")
+            
+            # Visualización de resultados principales
+            res_col1, res_col2 = st.columns(2)
+            with res_col1:
+                st.metric("xG Local", f"{xg_l}")
+            with res_col2:
+                st.metric("xG Visitante", f"{xg_v}")
+            
+            st.divider()
+            
+            # Sección para compartir
+            st.subheader("📤 Compartir Análisis")
+            
+            # Formateo del mensaje para redes sociales
+            mensaje_share = (
+                f"⚽ *Análisis de xG Pro*\n\n"
+                f"🏠 Local: {xg_l} xG\n"
+                f"🚀 Visitante: {xg_v} xG\n\n"
+                f"Basado en cuotas: {cuota_local} | {cuota_empate} | {cuota_visitante}"
+            )
+            
+            texto_url = urllib.parse.quote(mensaje_share)
+            url_wa = f"https://api.whatsapp.com/send?text={texto_url}"
+            url_tw = f"https://twitter.com/intent/tweet?text={texto_url}"
+            
+            # Botones de compartir (uso de componentes nativos para evitar errores de DOM)
+            share_col1, share_col2 = st.columns(2)
+            with share_col1:
+                st.link_button("🟢 WhatsApp", url_wa, use_container_width=True)
+            with share_col2:
+                st.link_button("🐦 X (Twitter)", url_tw, use_container_width=True)
+            
+            # Área de texto para copiar manualmente
+            st.text_area("Texto para copiar:", value=mensaje_share, height=100)
+            
+        except Exception as e:
+            st.error(f"Hubo un problema con el cálculo: {e}")
+
+st.sidebar.info("Este modelo asume independencia entre los goles marcados por cada equipo siguiendo una distribución de Poisson.")
